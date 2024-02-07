@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//플래닛 스케일 연결할때 
+
+model User {
+  id        Int      @id @default(autoincrement()) //id 키워드 자동적으로 숫자가 늘어나서 고객 정보 저장 테이블의 고유한 키값
+  createdAt DateTime @default(now()) //생성된 시점 (반필수적)
+  updatedAt DateTime @updatedAt //수정된 시점 (반필수적)
+  account   String   @unique // 겹쳐지지않게 중복되지않게 키워드 unique
+  password  String //옵션없이 키워드없이 작성해놓음
+  //profileImg String? //null 허용 들어가도되고 안들어가도되고
+  todos     Todo[]
+}
+
+// 유저 1  : 투두 다
+//투두의 관점에서는 1 : 다
+// 다대다 관계도 구축할수있음
+// schema는 우리가 만들겠다는 계획
+
+model Todo {
+  id        Int      @id @default(autoincrement()) //id 키워드 자동적으로 숫자가 늘어나서 고객 정보 저장
+  createdAt DateTime @default(now()) //생성된 시점 (반필수적)
+  updatedAt DateTime @updatedAt //수정된 시점 (반필수적)
+  //deleteAt 삭제시간도 있는데 별로 필요하지않을수도
+  content   String // 자료형뒤에 ? nullable default("할일없음") 이렇게 default값을 줄수있음
+  isDone    Boolean  @default(false)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id]) // 릴레이션 정의 필드 위의 model의 user를 갖고와서 userId에 저장 User의 id를 참조 //나오는 참조문구 인덱싱
+
+  @@index([userId])
+}
+
+// 모델링이 그떄그때 추가하기가 편함
+// id 데이터베이스 관리할때 필요한 아이디 키워드 숫자로 저장하기에는 보안이 허술해짐 랜덤한 문자값을 쓰는게 좋음
+//next auth => 소셜로그인 쉽게 구현
