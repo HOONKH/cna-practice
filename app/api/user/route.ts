@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { client } from "@/app/lib/prismaClient";
+import { verifyToken } from "@/app/lib/verifyToken";
 
-const client = new PrismaClient();
+//유저 조회
+export const GET = async (request: NextRequest) => {
+  try {
+    const user = await verifyToken(request);
+
+    return NextResponse.json(user.account);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        message: "Server Error",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+};
 
 //유저생성
 export const POST = async (request: NextRequest) => {
   try {
-    const { account, password } = await request.json(); //비동기로 꺼내옴
+    const { account, password } = await request.json(); //비동기로 꺼내옴 바디에서 받아옴. 바디에서 받아올때 await
 
     console.log(account);
     console.log(password);
@@ -50,25 +69,24 @@ export const POST = async (request: NextRequest) => {
     //saltOrRounds 10번정도 해싱
 
     //createMany는 배열로
-    const newUser = await client.user.create({
+    await client.user.create({
       data: {
         account: account,
         password: hashedPassword,
       },
-      select: {
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        account: true,
-        todos: true,
-      },
     });
+
+    // const token = jwt.sign({account:newUser.account}); 위의 뉴유져의 어카운트
+    const token = jwt.sign({ account }, process.env.JWT_SECRET!);
+
+    //토큰 검증
+    //jwt.verify(token,process.env.JWT_SECRET!);
 
     //select는 가시성 부여 하지만 작성하지않으면 안나옴 include는 모두에게 가시성 부여 포함해서 가시성 부여
 
-    console.log(newUser);
+    // console.log(newUser); 54번 변수명이 있을때
 
-    return NextResponse.json(newUser);
+    return NextResponse.json(token);
     // id account
     // pw password db저장할때 무조건 암호화
     // 데이터베이스 저장 사용자에게 응답
